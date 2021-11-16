@@ -6,7 +6,8 @@ import {
   Button,
   Image,
   Badge,
-  useToast,
+  toast,
+  useToast
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import { useWeb3React } from "@web3-react/core";
@@ -14,7 +15,7 @@ import usePlatziPunks from "../../hooks/usePlatziPunks";
 import { useCallback, useEffect, useState } from "react";
 
 const Home = () => {
-  const [isMinting, setIsMinting] = useState(false);
+  const [isMinting, setIsminting] = useState(false);
   const [imageSrc, setImageSrc] = useState("");
   const { active, account } = useWeb3React();
   const platziPunks = usePlatziPunks();
@@ -26,6 +27,7 @@ const Home = () => {
       const dnaPreview = await platziPunks.methods
         .deterministicPseudoRandomDNA(totalSupply, account)
         .call();
+        
       const image = await platziPunks.methods.imageByDNA(dnaPreview).call();
       setImageSrc(image);
     }
@@ -36,37 +38,39 @@ const Home = () => {
   }, [getPlatziPunksData]);
 
   const mint = () => {
-    setIsMinting(true);
+    setIsminting(true);
+    platziPunks.methods.mint().send({
+      from: account,
+    }).on('transactionHash', (txHash) => {
 
-    platziPunks.methods
-      .mint()
-      .send({
-        from: account,
+      toast({
+        title: 'Transaccion enviada',
+        description: txHash,
+        status: 'info'
       })
-      .on("transactionHash", (txHash) => {
-        toast({
-          title: "Transacción enviada",
-          description: txHash,
-          status: "info",
-        });
+
+    })
+    .on('receipt', () => {
+      setIsminting(false);
+
+      toast({
+        title: 'Transaccion confirmada',
+        description: 'Nunca pares de aprender',
+        status: 'success'
       })
-      .on("receipt", () => {
-        setIsMinting(false);
-        toast({
-          title: "Transacción confirmada",
-          description: "Nunca pares de aprender.",
-          status: "success",
-        });
+    })
+    .on('error', (error) => {
+      
+      setIsminting(false);
+      toast({
+        title: 'Transaccion fallida',
+        description: error.message,
+        status: 'error'
       })
-      .on("error", (error) => {
-        setIsMinting(false);
-        toast({
-          title: "Transacción fallida",
-          description: error.message,
-          status: "error",
-        });
-      });
-  };
+
+    });
+    
+  }
 
   return (
     <Stack
